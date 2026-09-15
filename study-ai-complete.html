@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study AI - 자동 문제 생성</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.4/dist/tesseract.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+            width: 100%;
+        }
+
+        header {
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        main {
+            flex: 1;
+            padding: 32px 0;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-primary:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background-color: var(--bg-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(79,70,229,0.02);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(79,70,229,0.05);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .file-list {
+            margin-top: 24px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            flex: 1;
+            color: var(--text-primary);
+        }
+
+        .file-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 120px;
+            text-align: right;
+        }
+
+        .file-status.success {
+            color: var(--success);
+        }
+
+        .file-status.error {
+            color: var(--error);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--bg-secondary);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+
+        .radio-group,
+        .checkbox-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .radio-item,
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        input[type="radio"],
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .question-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .question-number {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .question-content {
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: var(--bg-secondary);
+        }
+
+        .option:hover {
+            background-color: var(--bg-primary);
+            border-color: var(--primary);
+        }
+
+        .option input[type="radio"] {
+            margin: 0;
+        }
+
+        .question-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .result-summary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .result-score {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .result-item {
+            text-align: center;
+            padding: 16px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .result-item-value {
+            font-size: 24px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .result-item-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .problem-review {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .review-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .review-status.correct {
+            color: var(--success);
+        }
+
+        .review-status.incorrect {
+            color: var(--error);
+        }
+
+        .review-content {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .review-item {
+            margin-bottom: 12px;
+        }
+
+        .review-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .review-value {
+            color: var(--text-secondary);
+            padding-left: 12px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .stat-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-info {
+            background-color: #dbeafe;
+            color: #0c2340;
+            border: 1px solid #bfdbfe;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            nav {
+                width: 100%;
+                justify-content: center;
+            }
+
+            main {
+                padding: 16px 0;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .question-controls {
+                flex-direction: column;
+            }
+
+            .result-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .content-preview {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">📚 Study AI</div>
+                    <nav>
+                        <button class="nav-btn active" data-page="upload">업로드</button>
+                        <button class="nav-btn" data-page="settings">설정</button>
+                        <button class="nav-btn" data-page="quiz">풀이</button>
+                        <button class="nav-btn" data-page="results">결과</button>
+                        <button class="nav-btn" data-page="statistics">통계</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="container">
+                <!-- Upload Page -->
+                <div id="upload-page" class="page active">
+                    <div class="card">
+                        <h2 class="card-title">📄 파일 업로드</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">PDF 또는 이미지(JPG, PNG)를 업로드하면 내용을 자동으로 분석합니다.</p>
+                        
+                        <div class="file-upload-area" id="uploadArea">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">파일을 드래그하거나 클릭하여 업로드</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">지원: PDF, JPG, JPEG, PNG</div>
+                            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                        </div>
+
+                        <div class="file-list" id="fileList"></div>
+
+                        <div style="margin-top: 24px;">
+                            <button class="btn btn-primary" id="uploadBtn" disabled>
+                                파일 분석 시작
+                            </button>
+                        </div>
+
+                        <div id="extractedContent" class="content-preview" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings-page" class="page">
+                    <div class="card">
+                        <h2 class="card-title">⚙️ 문제 설정</h2>
+                        <div id="settingsContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <div class="empty-title">파일을 먼저 업로드해주세요</div>
+                                <button class="btn btn-primary" onclick="app.navigateTo('upload')">파일 업로드</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz Page -->
+                <div id="quiz-page" class="page">
+                    <div class="card">
+                        <div id="quizContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">❓</div>
+                                <div class="empty-title">문제를 먼저 생성해주세요</div>
+                                <button class="btn btn-primary" onclick="app.navigateTo('settings')">문제 생성</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Page -->
+                <div id="results-page" class="page">
+                    <div class="card" id="resultsContent">
+                        <div class="empty-state">
+                            <div class="empty-icon">📊</div>
+                            <div class="empty-title">아직 채점 결과가 없습니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Page -->
+                <div id="statistics-page" class="page">
+                    <div class="card" id="statisticsContent">
+                        <div class="empty-state">
+                            <div class="empty-icon">📈</div>
+                            <div class="empty-title">아직 통계 데이터가 없습니다</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ============ STATE MANAGEMENT ============
+        const state = {
+            extractedText: '',
+            keywords: [],
+            currentQuestions: [],
+            currentQuestionIndex: 0,
+            userAnswers: [],
+            allResults: [],
+            questionSettings: { count: 10, type: 'multiple' }
+        };
+
+        // ============ UTILITIES ============
+        function saveState() {
+            localStorage.setItem('studyAIState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('studyAIState');
+            if (saved) Object.assign(state, JSON.parse(saved));
+        }
+
+        // ============ NAVIGATION ============
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                app.navigateTo(e.target.dataset.page);
+            });
+        });
+
+        const app = {
+            navigateTo(page) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(`${page}-page`).classList.add('active');
+                
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.page === page);
+                });
+
+                if (page === 'settings') this.showSettings();
+                else if (page === 'quiz') this.showQuiz();
+                else if (page === 'results') this.showResults();
+                else if (page === 'statistics') this.showStatistics();
+            },
+
+            showAlert(type, message) {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `<div>${message}</div>`;
+                document.querySelector('main .container').insertBefore(alert, document.querySelector('main .container').firstChild);
+                setTimeout(() => alert.remove(), 5000);
+            }
+        };
+
+        // ============ FILE UPLOAD ============
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        async function handleFiles(files) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            uploadBtn.disabled = false;
+
+            for (let file of files) {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <div class="file-name">📄 ${file.name}</div>
+                    <div class="file-status uploading"><span class="loading"></span> 분석 중...</div>
+                `;
+                fileList.appendChild(item);
+
+                try {
+                    let text = '';
+                    
+                    if (file.type === 'application/pdf') {
+                        text = await extractTextFromPDF(file);
+                    } else if (file.type.startsWith('image/')) {
+                        text = await extractTextFromImage(file);
+                    }
+
+                    state.extractedText += text + '\n\n';
+                    
+                    item.querySelector('.file-status').innerHTML = '✓ 완료';
+                    item.querySelector('.file-status').className = 'file-status success';
+                } catch (error) {
+                    item.querySelector('.file-status').innerHTML = '✗ 오류';
+                    item.querySelector('.file-status').className = 'file-status error';
+                }
+            }
+
+            if (state.extractedText) {
+                document.getElementById('extractedContent').textContent = state.extractedText.substring(0, 500) + '...';
+                document.getElementById('extractedContent').style.display = 'block';
+                state.keywords = extractKeywords(state.extractedText);
+                saveState();
+                uploadBtn.disabled = false;
+            }
+        }
+
+        uploadBtn.addEventListener('click', () => {
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span> 분석 중...';
+            setTimeout(() => {
+                app.showAlert('success', '파일 분석이 완료되었습니다!');
+                uploadBtn.innerHTML = '파일 분석 시작';
+                app.navigateTo('settings');
+            }, 1500);
+        });
+
+        // ============ PDF EXTRACTION ============
+        async function extractTextFromPDF(file) {
+            return new Promise(async (resolve) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const pdf = await pdfjsLib.getDocument(e.target.result).promise;
+                    let text = '';
+                    
+                    for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        text += textContent.items.map(item => item.str).join(' ') + '\n';
+                    }
+                    
+                    resolve(text);
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // ============ IMAGE OCR EXTRACTION ============
+        async function extractTextFromImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const { data: { text } } = await Tesseract.recognize(e.target.result, 'kor');
+                        resolve(text);
+                    } catch (error) {
+                        resolve('');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ============ KEYWORD EXTRACTION ============
+        function extractKeywords(text) {
+            // 한글 문자 시퀀스와 주요 용어 추출
+            const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 5);
+            const words = text.match(/[가-힣]{2,}/g) || [];
+            
+            // 빈도수 기반 키워드
+            const wordCount = {};
+            words.forEach(word => {
+                if (word.length >= 2) {
+                    wordCount[word] = (wordCount[word] || 0) + 1;
+                }
+            });
+
+            return Object.entries(wordCount)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20)
+                .map(entry => entry[0]);
+        }
+
+        // ============ SETTINGS PAGE ============
+        function showSettings() {
+            if (!state.extractedText) return;
+
+            const content = document.getElementById('settingsContent');
+            content.innerHTML = `
+                <div class="form-group">
+                    <label>문제 수</label>
+                    <input type="number" id="questionCount" value="10" min="3" max="20">
+                </div>
+
+                <div class="form-group">
+                    <label>문제 유형</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="type" value="multiple" id="type-multiple" checked>
+                            <label for="type-multiple">객관식 (4지선다)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="type" value="ox" id="type-ox">
+                            <label for="type-ox">O/X 문제</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="app.generateQuestions()" style="width: 100%; padding: 12px; margin-top: 20px;">
+                    문제 생성
+                </button>
+            `;
+        }
+
+        // ============ QUESTION GENERATION ============
+        app.generateQuestions = function() {
+            const count = parseInt(document.getElementById('questionCount').value) || 10;
+            const type = document.querySelector('input[name="type"]:checked').value;
+            
+            state.questionSettings = { count, type };
+            state.currentQuestions = [];
+            state.currentQuestionIndex = 0;
+            state.userAnswers = new Array(count).fill(null);
+
+            for (let i = 0; i < count; i++) {
+                state.currentQuestions.push(generateQuestion(i + 1, type, state.keywords, state.extractedText));
+            }
+
+            saveState();
+            app.showAlert('success', `${count}개의 문제가 생성되었습니다!`);
+            setTimeout(() => app.navigateTo('quiz'), 1500);
+        };
+
+        function generateQuestion(number, type, keywords, fullText) {
+            const selectedKeywords = keywords.slice(Math.floor(Math.random() * 5), Math.floor(Math.random() * 5) + 3);
+            const mainKeyword = selectedKeywords[0] || '내용';
+
+            if (type === 'multiple') {
+                return {
+                    id: number,
+                    type: 'multiple',
+                    question: `다음 중 "${mainKeyword}"에 대해 가장 올바른 설명은?`,
+                    options: [
+                        `${mainKeyword}은 ${selectedKeywords[1] || '중요한 개념'}과 관련이 있다.`,
+                        `${mainKeyword}은 학습의 기본이 된다.`,
+                        `${mainKeyword}의 특징을 이해하면 다른 내용도 쉬워진다.`,
+                        `${mainKeyword}은 과거부터 현재까지 변하지 않는다.`
+                    ],
+                    correctAnswer: 0,
+                    explanation: `"${mainKeyword}"은(는) 업로드하신 자료에서 자주 언급되는 중요한 개념입니다. 이를 정확히 이해하는 것이 중요합니다.`
+                };
+            } else {
+                return {
+                    id: number,
+                    type: 'ox',
+                    question: `"${mainKeyword}"은(는) 업로드하신 자료에서 설명하는 주요 내용이다.`,
+                    correctAnswer: 'O',
+                    explanation: `맞습니다! "${mainKeyword}"은(는) 제공된 자료에서 자주 다루어지는 핵심 개념입니다.`
+                };
+            }
+        }
+
+        // ============ QUIZ PAGE ============
+        function showQuiz() {
+            if (state.currentQuestions.length === 0) return;
+
+            const question = state.currentQuestions[state.currentQuestionIndex];
+            const index = state.currentQuestionIndex;
+            const total = state.currentQuestions.length;
+
+            let html = `
+                <div class="question-card">
+                    <div class="question-header">
+                        <span class="question-number">문제 ${index + 1}/${total}</span>
+                    </div>
+
+                    <div class="question-content">
+                        <div class="question-text">${question.question}</div>
+            `;
+
+            if (question.type === 'multiple') {
+                html += '<div class="options">';
+                question.options.forEach((option, i) => {
+                    const checked = state.userAnswers[index] === i ? 'checked' : '';
+                    html += `
+                        <label class="option">
+                            <input type="radio" name="answer" value="${i}" ${checked}>
+                            <span>${String.fromCharCode(65 + i)}. ${option}</span>
+                        </label>
+                    `;
+                });
+                html += '</div>';
+            } else {
+                const checkedO = state.userAnswers[index] === 'O' ? 'checked' : '';
+                const checkedX = state.userAnswers[index] === 'X' ? 'checked' : '';
+                html += `
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="answer" value="O" ${checkedO}>
+                            <span>O (참)</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="answer" value="X" ${checkedX}>
+                            <span>X (거짓)</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+
+                <div class="question-controls">
+                    <div style="font-weight: 600; color: var(--text-secondary);">진행: ${index + 1}/${total}</div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="app.prevQuestion()" ${index === 0 ? 'disabled' : ''}>← 이전</button>
+                        <button class="btn btn-primary" onclick="app.nextQuestion()">${index === total - 1 ? '채점' : '다음 →'}</button>
+                    </div>
+                </div>
+            `;
+
+            const quizContent = document.getElementById('quizContent');
+            quizContent.innerHTML = html;
+
+            // 라디오 버튼 이벤트
+            quizContent.querySelectorAll('input[name="answer"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    state.userAnswers[index] = question.type === 'ox' ? input.value : parseInt(input.value);
+                    saveState();
+                });
+            });
+        }
+
+        app.nextQuestion = function() {
+            if (state.currentQuestionIndex < state.currentQuestions.length - 1) {
+                state.currentQuestionIndex++;
+                saveState();
+                showQuiz();
+            } else {
+                submitQuiz();
+            }
+        };
+
+        app.prevQuestion = function() {
+            if (state.currentQuestionIndex > 0) {
+                state.currentQuestionIndex--;
+                saveState();
+                showQuiz();
+            }
+        };
+
+        function submitQuiz() {
+            let correct = 0;
+            const details = [];
+
+            state.currentQuestions.forEach((q, i) => {
+                const userAnswer = state.userAnswers[i];
+                const isCorrect = userAnswer === q.correctAnswer;
+                if (isCorrect) correct++;
+
+                details.push({
+                    question: q.question,
+                    userAnswer: userAnswer,
+                    correctAnswer: q.correctAnswer,
+                    correct: isCorrect,
+                    explanation: q.explanation
+                });
+            });
+
+            const result = {
+                correct,
+                total: state.currentQuestions.length,
+                percentage: Math.round((correct / state.currentQuestions.length) * 100),
+                details,
+                timestamp: new Date().toLocaleString('ko-KR')
+            };
+
+            state.allResults.push(result);
+            saveState();
+            app.showAlert('success', '채점이 완료되었습니다!');
+            setTimeout(() => app.navigateTo('results'), 1500);
+        }
+
+        // ============ RESULTS PAGE ============
+        function showResults() {
+            const content = document.getElementById('resultsContent');
+            if (state.allResults.length === 0) return;
+
+            const lastResult = state.allResults[state.allResults.length - 1];
+            const { correct, total, percentage, details } = lastResult;
+
+            let html = `
+                <div class="result-summary">
+                    <div style="font-size: 14px; font-weight: 600; opacity: 0.9;">채점 결과</div>
+                    <div class="result-score">${percentage}%</div>
+                    <div class="result-details">
+                        <div class="result-item">
+                            <span class="result-item-value">${correct}</span>
+                            <span class="result-item-label">정답</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-item-value">${total - correct}</span>
+                            <span class="result-item-label">오답</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-item-value">${total}</span>
+                            <span class="result-item-label">전체</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-weight: 600; margin: 24px 0 16px 0;">문제별 해설</h3>
+            `;
+
+            details.forEach((detail, i) => {
+                const statusClass = detail.correct ? 'correct' : 'incorrect';
+                const statusText = detail.correct ? '✓ 정답' : '✗ 오답';
+
+                html += `
+                    <div class="problem-review">
+                        <div class="review-header">
+                            <span>문제 ${i + 1}</span>
+                            <span class="review-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="review-content">
+                            <div class="review-item">
+                                <div class="review-label">문제</div>
+                                <div class="review-value">${detail.question}</div>
+                            </div>
+                            <div class="review-item">
+                                <div class="review-label">당신의 답</div>
+                                <div class="review-value">${detail.userAnswer || '(미답변)'}</div>
+                            </div>
+                            <div class="review-item">
+                                <div class="review-label">정답</div>
+                                <div class="review-value">${detail.correctAnswer}</div>
+                            </div>
+                            <div class="review-item">
+                                <div class="review-label">해설</div>
+                                <div class="review-value">${detail.explanation}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        }
+
+        // ============ STATISTICS PAGE ============
+        function showStatistics() {
+            const content = document.getElementById('statisticsContent');
+            if (state.allResults.length === 0) return;
+
+            const totalQuestions = state.allResults.reduce((sum, r) => sum + r.total, 0);
+            const totalCorrect = state.allResults.reduce((sum, r) => sum + r.correct, 0);
+            const avgScore = Math.round((totalCorrect / totalQuestions) * 100);
+
+            let html = `
+                <h2 class="card-title">📈 학습 통계</h2>
+                <div class="grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${totalQuestions}</div>
+                        <div class="stat-label">총 풀이</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${avgScore}%</div>
+                        <div class="stat-label">평균 점수</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${totalCorrect}</div>
+                        <div class="stat-label">총 정답</div>
+                    </div>
+                </div>
+
+                <h3 style="font-weight: 600; margin: 24px 0 16px 0;">최근 풀이 기록</h3>
+            `;
+
+            state.allResults.slice().reverse().forEach((result, i) => {
+                html += `
+                    <div style="padding: 12px; background-color: var(--bg-secondary); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">풀이 ${i + 1}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">${result.timestamp}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">정답: ${result.correct}/${result.total}</div>
+                        </div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--primary);">${result.percentage}%</div>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        }
+
+        // ============ INITIALIZE ============
+        loadState();
+    </script>
+</body>
+</html>
