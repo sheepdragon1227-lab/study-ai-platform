@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study AI - 스마트 학습 플랫폼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-dark: #4338ca;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 16px;
+            width: 100%;
+        }
+
+        /* Header Navigation */
+        header {
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 32px 0;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-primary:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn-error {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .btn-error:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Checkboxes and Radio */
+        .checkbox-group,
+        .radio-group {
+            display: grid;
+            gap: 12px;
+        }
+
+        .checkbox-item,
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* File Upload */
+        .file-upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            background-color: var(--bg-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(79, 70, 229, 0.02);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* File List */
+        .file-list {
+            margin-top: 24px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .file-name {
+            flex: 1;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .file-size {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin: 0 12px;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .file-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .file-status.success {
+            color: var(--success);
+        }
+
+        .file-status.error {
+            color: var(--error);
+        }
+
+        .file-status.uploading {
+            color: var(--primary);
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        /* Alert */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .alert-icon {
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .alert-info {
+            background-color: #dbeafe;
+            color: #0c2340;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Question Display */
+        .question-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .question-number {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .question-difficulty {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .difficulty-easy {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .difficulty-normal {
+            background-color: #dbeafe;
+            color: #0c2340;
+        }
+
+        .difficulty-hard {
+            background-color: #fed7aa;
+            color: #92400e;
+        }
+
+        .difficulty-very-hard {
+            background-color: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        .question-content {
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: var(--bg-secondary);
+        }
+
+        .option:hover {
+            background-color: var(--bg-primary);
+            border-color: var(--primary);
+        }
+
+        .option input[type="radio"] {
+            margin: 0;
+        }
+
+        .option.selected {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-color: var(--primary);
+        }
+
+        .option.correct {
+            background-color: #d1fae5;
+            border-color: var(--success);
+        }
+
+        .option.incorrect {
+            background-color: #fee2e2;
+            border-color: var(--error);
+        }
+
+        /* Answer Input */
+        .answer-input-group {
+            margin-bottom: 20px;
+        }
+
+        .answer-input-group label {
+            margin-bottom: 10px;
+        }
+
+        .answer-input-group textarea {
+            width: 100%;
+            min-height: 120px;
+        }
+
+        /* Navigation Controls */
+        .question-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+
+        .progress-indicator {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Results */
+        .result-summary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .result-score {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .result-item {
+            text-align: center;
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .result-item-value {
+            font-size: 24px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .result-item-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* Problem Review */
+        .problem-review {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .review-status.correct {
+            color: var(--success);
+        }
+
+        .review-status.incorrect {
+            color: var(--error);
+        }
+
+        .review-content {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .review-item {
+            margin-bottom: 12px;
+        }
+
+        .review-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .review-value {
+            color: var(--text-secondary);
+            padding-left: 12px;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Statistics */
+        .stat-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            nav {
+                width: 100%;
+                justify-content: flex-start;
+                overflow-x: auto;
+            }
+
+            .container {
+                padding: 0 12px;
+            }
+
+            main {
+                padding: 16px 0;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .question-controls {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .controls-group {
+                width: 100%;
+            }
+
+            .controls-group .btn {
+                flex: 1;
+            }
+
+            .result-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .file-size,
+            .file-status {
+                text-align: left;
+                margin: 8px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .result-score {
+                font-size: 36px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <a href="#" class="logo">📚 Study AI</a>
+                    <nav id="navigation">
+                        <button class="nav-btn active" data-page="home">홈</button>
+                        <button class="nav-btn" data-page="upload">파일 업로드</button>
+                        <button class="nav-btn" data-page="analysis">자료 분석</button>
+                        <button class="nav-btn" data-page="settings">문제 설정</button>
+                        <button class="nav-btn" data-page="quiz">문제 풀이</button>
+                        <button class="nav-btn" data-page="mistakes">오답노트</button>
+                        <button class="nav-btn" data-page="statistics">학습 통계</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="container">
+                <!-- Home Page -->
+                <div id="home-page" class="page active">
+                    <div class="card" style="text-align: center; padding: 48px 24px;">
+                        <h1 style="font-size: 32px; margin-bottom: 16px;">📚 Study AI에 오신 것을 환영합니다</h1>
+                        <p style="font-size: 16px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.8;">
+                            교과서나 문서를 업로드하면 AI가 자동으로 분석하여<br>
+                            실력에 맞는 문제를 생성해줍니다.
+                        </p>
+                        <button class="btn btn-primary" style="padding: 12px 32px; font-size: 16px;" onclick="app.navigateTo('upload')">
+                            시작하기
+                        </button>
+
+                        <div class="grid grid-3" style="margin-top: 48px;">
+                            <div style="padding: 24px;">
+                                <div style="font-size: 32px; margin-bottom: 12px;">📄</div>
+                                <h3 style="font-weight: 600; margin-bottom: 8px;">다양한 형식 지원</h3>
+                                <p style="font-size: 14px; color: var(--text-secondary);">PDF, 이미지 등 여러 형식의 파일을 한 번에 업로드할 수 있습니다.</p>
+                            </div>
+                            <div style="padding: 24px;">
+                                <div style="font-size: 32px; margin-bottom: 12px;">🤖</div>
+                                <h3 style="font-weight: 600; margin-bottom: 8px;">AI 문제 생성</h3>
+                                <p style="font-size: 14px; color: var(--text-secondary);">교과서 내용을 분석하여 다양한 유형의 문제를 자동으로 생성합니다.</p>
+                            </div>
+                            <div style="padding: 24px;">
+                                <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
+                                <h3 style="font-weight: 600; margin-bottom: 8px;">학습 분석</h3>
+                                <p style="font-size: 14px; color: var(--text-secondary);">풀이 기록을 바탕으로 약한 부분을 분석하고 맞춤 학습을 제공합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Page -->
+                <div id="upload-page" class="page">
+                    <div class="card">
+                        <h2 class="card-title">파일 업로드</h2>
+                        <div class="file-upload-area" id="uploadArea">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">파일을 드래그하거나 클릭하여 업로드</div>
+                            <div class="upload-hint">지원 형식: PDF, JPG, JPEG, PNG, WEBP</div>
+                            <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp" style="display: none;">
+                        </div>
+
+                        <div class="file-list" id="fileList"></div>
+
+                        <div style="margin-top: 24px; display: flex; gap: 12px;">
+                            <button class="btn btn-primary" id="uploadBtn" disabled>
+                                업로드 시작
+                            </button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                                파일 선택
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Page -->
+                <div id="analysis-page" class="page">
+                    <div class="card">
+                        <h2 class="card-title">자료 분석</h2>
+                        <div id="analysisContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">📋</div>
+                                <div class="empty-title">분석할 자료가 없습니다</div>
+                                <div class="empty-description">먼저 파일을 업로드해주세요.</div>
+                                <button class="btn btn-primary" onclick="app.navigateTo('upload')">
+                                    파일 업로드하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settings-page" class="page">
+                    <div class="card">
+                        <h2 class="card-title">문제 설정</h2>
+                        <div id="settingsContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">⚙️</div>
+                                <div class="empty-title">분석된 자료가 없습니다</div>
+                                <div class="empty-description">파일을 업로드하고 분석을 완료한 후 문제를 설정할 수 있습니다.</div>
+                                <button class="btn btn-primary" onclick="app.navigateTo('upload')">
+                                    파일 업로드하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz Page -->
+                <div id="quiz-page" class="page">
+                    <div class="card">
+                        <div id="quizContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">❓</div>
+                                <div class="empty-title">풀 문제가 없습니다</div>
+                                <div class="empty-description">문제를 생성한 후 풀이를 시작할 수 있습니다.</div>
+                                <button class="btn btn-primary" onclick="app.navigateTo('settings')">
+                                    문제 생성하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mistakes Page -->
+                <div id="mistakes-page" class="page">
+                    <div class="card">
+                        <h2 class="card-title">오답노트</h2>
+                        <div id="mistakesContent">
+                            <div class="empty-state">
+                                <div class="empty-icon">✨</div>
+                                <div class="empty-title">완벽합니다!</div>
+                                <div class="empty-description">틀린 문제가 없습니다. 계속 열심히 공부하세요!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Page -->
+                <div id="statistics-page" class="page">
+                    <div id="statisticsContent">
+                        <div class="empty-state">
+                            <div class="empty-icon">📊</div>
+                            <div class="empty-title">아직 풀이 기록이 없습니다</div>
+                            <div class="empty-description">문제를 풀기 시작하면 통계가 표시됩니다.</div>
+                            <button class="btn btn-primary" onclick="app.navigateTo('quiz')">
+                                문제 풀기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
