@@ -1,2 +1,50 @@
-# study-ai-platform
-AI-powered study assistant: Upload textbooks/documents → Auto-generate practice questions → Track learning with analytics
+# Study AI Platform
+
+저장소 주소: https://github.com/sheepdragon1227-lab/study-ai-platform
+
+교과서나 학습 자료를 업로드하면 AI가 자동으로 분석하여 실력에 맞는 문제를 생성해주는 스마트 학습 플랫폼입니다.
+
+## 기능
+
+### 📄 파일 업로드
+- PDF, JPG, JPEG, PNG, WEBP 형식 지원
+- 여러 파일 동시 업로드
+- 드래그 앤 드롭 지원
+
+### 🤖 자동 문제 생성
+- 교과서 내용을 분석하여 다양한 유형의 문제 생성
+- 객관식(4지선다, 5지선다), 주관식, O/X, 빈칸 문제 지원
+- 난이도 조절 가능 (쉬움, 보통, 어려움, 매우 어려움, 혼합)
+
+### ✍️ 문제 풀이
+- 한 문제씩 차근차근 풀기
+- 진행률 표시
+- 자동 채점
+
+### 📊 학습 분석
+- 정답률 분석
+- 약한 부분 파악
+- 학습 기록 통계
+
+### 📝 오답노트
+- 틀린 문제 자동 저장
+- 정답 및 해설 제공
+- 반복 학습 기능
+
+## 사용 방법
+
+1. 페이지에 접속
+2. "파일 업로드" 탭에서 교과서나 학습 자료 업로드
+3. "문제 설정"에서 문제 유형, 난이도, 개수 선택
+4. "문제 풀이"에서 문제 풀기
+5. "학습 통계"에서 학습 기록 확인
+
+## 기술 스택
+
+- HTML5, CSS3, Vanilla JavaScript
+- Vite (빌드 도구)
+- IndexedDB / LocalStorage (클라이언트 저장소)
+
+## 라이센스
+
+MIT
